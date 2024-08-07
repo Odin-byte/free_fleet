@@ -42,7 +42,7 @@ def main(argv = sys.argv):
     default_desired_x = 0.0
     default_desired_y = 0.0
     default_desired_yaw = 0.0
-    default_level_name = 'B1'
+    default_level_name = 'mojin-le-2'
     default_topic_name = 'robot_destination_requests'
 
     parser = argparse.ArgumentParser()
