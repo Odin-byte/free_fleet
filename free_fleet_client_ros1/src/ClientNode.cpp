@@ -18,6 +18,8 @@
 #include "utilities.hpp"
 #include "ClientNode.hpp"
 #include "ClientNodeConfig.hpp"
+#include <iostream>
+#include <vector>
 
 namespace free_fleet
 {
@@ -50,26 +52,30 @@ ClientNode::SharedPtr ClientNode::make(const ClientNodeConfig& _config)
       _config.move_base_server_name.c_str());
 
   /// Setting up the docking server client, if required, wait for server
-  std::unique_ptr<ros::ServiceClient> docking_trigger_client = nullptr;
-  if (_config.docking_trigger_server_name != "")
+  std::unique_ptr<ros::ServiceClient> docking_SetString_client = nullptr;
+  if (_config.docking_set_string_server_name != "")
   {
-    docking_trigger_client =
+    docking_SetString_client =
       std::make_unique<ros::ServiceClient>(
-        client_node->node->serviceClient<std_srvs::Trigger>(
-          _config.docking_trigger_server_name, true));
-    if (!docking_trigger_client->waitForExistence(
+        client_node->node->serviceClient<cob_srvs::SetString>(
+          _config.docking_set_string_server_name, false));
+    if (!docking_SetString_client->waitForExistence(
       ros::Duration(_config.wait_timeout)))
     {
-      ROS_ERROR("timed out waiting for docking trigger server: %s",
-        _config.docking_trigger_server_name.c_str());
+      ROS_ERROR("timed out waiting for docking SetString server: %s",
+        _config.docking_set_string_server_name.c_str());
       return nullptr;
+    }
+    else
+    {
+      ROS_INFO("connected with docking service: %s", _config.docking_set_string_server_name.c_str());
     }
   }
 
   client_node->start(Fields{
       std::move(client),
       std::move(move_base_client),
-      std::move(docking_trigger_client)
+      std::move(docking_SetString_client)
   });
 
   return client_node;
@@ -275,6 +281,7 @@ move_base_msgs::MoveBaseGoal ClientNode::location_to_move_base_goal(
 bool ClientNode::read_mode_request()
 {
   messages::ModeRequest mode_request;
+  std::vector<messages::ModeParameter> mode_parameters;
   if (fields.client->read_mode_request(mode_request) && 
       is_valid_request(
           mode_request.fleet_name, mode_request.robot_name, 
@@ -307,15 +314,29 @@ bool ClientNode::read_mode_request()
     else if (mode_request.mode.mode == messages::RobotMode::MODE_DOCKING)
     {
       ROS_INFO("received a DOCKING command.");
-      if (fields.docking_trigger_client &&
-        fields.docking_trigger_client->isValid())
+
+      if (fields.docking_SetString_client)
       {
-        std_srvs::Trigger trigger_srv;
-        fields.docking_trigger_client->call(trigger_srv);
-        if (!trigger_srv.response.success)
+        cob_srvs::SetString SetString_srv;
+
+        // See if there is a dock name given
+        for (messages::ModeParameter const& param : mode_request.parameters)
+        {
+            ROS_DEBUG("Parameter name: %s, value: %s", param.name.c_str(), param.value.c_str());
+            if (param.name == "Dock_Name")
+            {
+                ROS_INFO("Found param: %s", param.value.c_str());
+                SetString_srv.request.data = param.value;
+                break;
+            }
+        }
+        ROS_DEBUG("Calling srv with frame_id %s", SetString_srv.request.data.c_str());
+        fields.docking_SetString_client->call(SetString_srv);
+
+        if (!SetString_srv.response.success)
         {
           ROS_ERROR("Failed to trigger docking sequence, message: %s.",
-            trigger_srv.response.message.c_str());
+            SetString_srv.response.message.c_str());
           request_error = true;
           return false;
         }

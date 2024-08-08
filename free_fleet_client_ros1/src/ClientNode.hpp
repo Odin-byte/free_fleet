@@ -27,7 +27,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/String.h>
-#include <std_srvs/Trigger.h>
+#include <cob_srvs/SetString.h>
 #include <sensor_msgs/BatteryState.h>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -72,7 +72,7 @@ public:
     MoveBaseClientSharedPtr move_base_client;
 
     /// Docking server client
-    std::unique_ptr<ros::ServiceClient> docking_trigger_client;
+    std::unique_ptr<ros::ServiceClient> docking_SetString_client;
   };
 
   void print_config();
