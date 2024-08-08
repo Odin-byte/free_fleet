@@ -41,6 +41,16 @@ void to_ff_message(
   _out_msg.robot_name = _in_msg.robot_name;
   _out_msg.mode.mode = _in_msg.mode.mode;
   _out_msg.task_id = _in_msg.task_id;
+  
+  for (auto const& param : _in_msg.parameters)
+  {
+    messages::ModeParameter param_out;
+    param_out.name = param.name;
+    param_out.value = param.value;
+
+
+    _out_msg.parameters.push_back(param_out);
+  }
 }
 
 void to_ff_message(
