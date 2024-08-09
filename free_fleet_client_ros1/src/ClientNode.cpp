@@ -108,7 +108,7 @@ void ClientNode::start(Fields _fields)
   update_rate.reset(new ros::Rate(client_node_config.update_frequency));
   publish_rate.reset(new ros::Rate(client_node_config.publish_frequency));
 
-  battery_percent_sub = node->subscribe(
+  battery_sub = node->subscribe(
       client_node_config.battery_state_topic, 1,
       &ClientNode::battery_state_callback_fn, this);
 
@@ -130,7 +130,7 @@ void ClientNode::print_config()
 }
 
 void ClientNode::battery_state_callback_fn(
-    const sensor_msgs::BatteryState& _msg)
+    const cob_msgs::PowerState& _msg)
 {
   WriteLock battery_state_lock(battery_state_mutex);
   current_battery_state = _msg;
@@ -164,13 +164,15 @@ messages::RobotMode ClientNode::get_robot_mode()
   /// Checks if robot is under emergency
   if (emergency)
     return messages::RobotMode{messages::RobotMode::MODE_EMERGENCY};
-
+  
+  // Checks if robot is currently docking
+  if (docking)
+    return messages::RobotMode{messages::RobotMode::MODE_DOCKING};
   /// Checks if robot is charging
   {
     ReadLock battery_state_lock(battery_state_mutex);
 
-    if (current_battery_state.power_supply_status ==
-        current_battery_state.POWER_SUPPLY_STATUS_CHARGING)
+    if (current_battery_state.charging == true)
       return messages::RobotMode{messages::RobotMode::MODE_CHARGING};
   }
 
@@ -209,9 +211,7 @@ void ClientNode::publish_robot_state()
   {
     ReadLock battery_state_lock(battery_state_mutex);
     /// RMF expects battery to have a percentage in the range for 0-100.
-    /// sensor_msgs/BatteryInfo on the other hand returns a value in 
-    /// the range of 0-1
-    new_robot_state.battery_percent = 100*current_battery_state.percentage;
+    new_robot_state.battery_percent = current_battery_state.relative_remaining_capacity;
   }
 
   {
@@ -330,6 +330,7 @@ bool ClientNode::read_mode_request()
                 break;
             }
         }
+        docking = true;
         ROS_DEBUG("Calling srv with frame_id %s", SetString_srv.request.data.c_str());
         fields.docking_SetString_client->call(SetString_srv);
 
@@ -341,6 +342,7 @@ bool ClientNode::read_mode_request()
           return false;
         }
       }
+      docking = false;
     }
 
     WriteLock task_id_lock(task_id_mutex);

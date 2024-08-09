@@ -21,7 +21,7 @@ find_package(catkin QUIET COMPONENTS
   roscpp
   std_srvs
   cob_srvs
-  sensor_msgs
+  cob_msgs
   tf2
   tf2_ros
   tf2_geometry_msgs

@@ -28,7 +28,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <cob_srvs/SetString.h>
-#include <sensor_msgs/BatteryState.h>
+#include <cob_msgs/PowerState.h>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
 
@@ -91,13 +91,13 @@ private:
   // --------------------------------------------------------------------------
   // Battery handling
 
-  ros::Subscriber battery_percent_sub;
+  ros::Subscriber battery_sub;
 
   std::mutex battery_state_mutex;
 
-  sensor_msgs::BatteryState current_battery_state;
+  cob_msgs::PowerState current_battery_state;
 
-  void battery_state_callback_fn(const sensor_msgs::BatteryState& msg);
+  void battery_state_callback_fn(const cob_msgs::PowerState& msg);
 
   // --------------------------------------------------------------------------
   // Robot transform handling
@@ -123,6 +123,7 @@ private:
   std::atomic<bool> request_error;
   std::atomic<bool> emergency;
   std::atomic<bool> paused;
+  std::atomic<bool> docking;
 
   messages::RobotMode get_robot_mode();
 
