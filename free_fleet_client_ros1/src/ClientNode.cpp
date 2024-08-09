@@ -71,11 +71,33 @@ ClientNode::SharedPtr ClientNode::make(const ClientNodeConfig& _config)
       ROS_INFO("connected with docking service: %s", _config.docking_set_string_server_name.c_str());
     }
   }
+  
+  /// Setting up the undocking server client, if required, wait for server
+  std::unique_ptr<ros::ServiceClient> undocking_SetString_client = nullptr;
+  if (_config.undocking_set_string_server_name != "")
+  {
+    undocking_SetString_client =
+      std::make_unique<ros::ServiceClient>(
+        client_node->node->serviceClient<cob_srvs::SetString>(
+          _config.undocking_set_string_server_name, false));
+    if (!undocking_SetString_client->waitForExistence(
+      ros::Duration(_config.wait_timeout)))
+    {
+      ROS_ERROR("timed out waiting for undocking SetString server: %s",
+        _config.undocking_set_string_server_name.c_str());
+      return nullptr;
+    }
+    else
+    {
+      ROS_INFO("connected with docking service: %s", _config.undocking_set_string_server_name.c_str());
+    }
+  }
 
   client_node->start(Fields{
       std::move(client),
       std::move(move_base_client),
-      std::move(docking_SetString_client)
+      std::move(docking_SetString_client),
+      std::move(undocking_SetString_client)
   });
 
   return client_node;
@@ -327,6 +349,7 @@ bool ClientNode::read_mode_request()
             {
                 ROS_INFO("Found param: %s", param.value.c_str());
                 SetString_srv.request.data = param.value;
+                docked_frame = param.value;
                 break;
             }
         }
@@ -343,6 +366,9 @@ bool ClientNode::read_mode_request()
         }
       }
       docking = false;
+      
+      // Remember that we are currently docked
+      docked = true;
     }
 
     WriteLock task_id_lock(task_id_mutex);
@@ -479,6 +505,35 @@ void ClientNode::handle_requests()
   WriteLock goal_path_lock(goal_path_mutex);
   if (!goal_path.empty())
   {
+    // Check if we are currently docked
+    if (docked)
+    {
+      // Call undocking service on frame_id we are currently docked at
+      if (fields.undocking_SetString_client)
+      {
+        cob_srvs::SetString SetString_srv;
+        std::cout << docked_frame;
+        SetString_srv.request.data = docked_frame;
+
+        docking = true;
+        ROS_INFO("Calling srv with frame_id %s", SetString_srv.request.data.c_str());
+        fields.undocking_SetString_client->call(SetString_srv);
+        docking = false;
+        
+        if (!SetString_srv.response.success)
+        {
+          ROS_ERROR("Failed to trigger docking sequence, message: %s.",
+            SetString_srv.response.message.c_str());
+          request_error = true;
+          return;
+        }
+      }
+      
+      // Remember that we are no longer docked
+      docked = false;
+      docked_frame = "";
+
+    }
     // Goals must have been updated since last handling, execute them now
     if (!goal_path.front().sent)
     {
@@ -509,6 +564,10 @@ void ClientNode::handle_requests()
             "we reached our goal early! Waiting %.1f more seconds",
             wait_time_remaining.toSec());
       }
+      return;
+    }
+    else if (current_goal_state == GoalState::PENDING)
+    {
       return;
     }
     else if (current_goal_state == GoalState::ACTIVE)

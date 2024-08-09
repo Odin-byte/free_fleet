@@ -73,6 +73,9 @@ public:
 
     /// Docking server client
     std::unique_ptr<ros::ServiceClient> docking_SetString_client;
+
+    /// Undocking server client
+    std::unique_ptr<ros::ServiceClient> undocking_SetString_client;
   };
 
   void print_config();
@@ -124,6 +127,8 @@ private:
   std::atomic<bool> emergency;
   std::atomic<bool> paused;
   std::atomic<bool> docking;
+  std::atomic<bool> docked;
+  std::string docked_frame;
 
   messages::RobotMode get_robot_mode();
 

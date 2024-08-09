@@ -79,6 +79,7 @@ void ClientNodeConfig::print_config() const
   printf("    battery state: %s\n", battery_state_topic.c_str());
   printf("    move base server: %s\n", move_base_server_name.c_str());
   printf("    docking set_string server: %s\n", docking_set_string_server_name.c_str());
+  printf("    undocking set_string server: %s\n", undocking_set_string_server_name.c_str());
   printf("  ROBOT FRAMES\n");
   printf("    map frame: %s\n", map_frame.c_str());
   printf("    robot frame: %s\n", robot_frame.c_str());
@@ -124,6 +125,8 @@ ClientNodeConfig ClientNodeConfig::make()
       node_private_ns, "move_base_server_name", config.move_base_server_name);
   config.get_param_if_available(
       node_private_ns, "docking_set_string_server_name", config.docking_set_string_server_name);
+  config.get_param_if_available(
+      node_private_ns, "undocking_set_string_server_name", config.undocking_set_string_server_name);
   config.get_param_if_available(
       node_private_ns, "dds_domain", config.dds_domain);
   config.get_param_if_available(
