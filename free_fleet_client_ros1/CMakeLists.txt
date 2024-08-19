@@ -26,7 +26,7 @@ find_package(catkin QUIET COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   actionlib
-  move_base_msgs
+  ipa_navigation_msgs
 )
 
 if (catkin_FOUND)

@@ -286,10 +286,10 @@ bool ClientNode::is_valid_request(
   return true;
 }
 
-move_base_msgs::MoveBaseGoal ClientNode::location_to_move_base_goal(
+ipa_navigation_msgs::MoveBaseGoal ClientNode::location_to_move_base_goal(
     const messages::Location& _location) const
 {
-  move_base_msgs::MoveBaseGoal goal;
+  ipa_navigation_msgs::MoveBaseGoal goal;
   goal.target_pose.header.frame_id = client_node_config.map_frame;
   goal.target_pose.header.stamp.sec = _location.sec;
   goal.target_pose.header.stamp.nsec = _location.nanosec;
@@ -297,6 +297,8 @@ move_base_msgs::MoveBaseGoal ClientNode::location_to_move_base_goal(
   goal.target_pose.pose.position.y = _location.y;
   goal.target_pose.pose.position.z = 0.0; // TODO: handle Z height with level
   goal.target_pose.pose.orientation = get_quat_from_yaw(_location.yaw);
+  goal.parameters = "{rotational_goal_tolerance: 3.14}";
+
   return goal;
 }
 
@@ -345,7 +347,7 @@ bool ClientNode::read_mode_request()
         for (messages::ModeParameter const& param : mode_request.parameters)
         {
             ROS_DEBUG("Parameter name: %s, value: %s", param.name.c_str(), param.value.c_str());
-            if (param.name == "Dock_Name")
+            if (param.name == "docking")
             {
                 ROS_INFO("Found param: %s", param.value.c_str());
                 SetString_srv.request.data = param.value;

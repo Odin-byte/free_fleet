@@ -31,9 +31,8 @@
 #include <cob_msgs/PowerState.h>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
-
-#include <move_base_msgs/MoveBaseGoal.h>
-#include <move_base_msgs/MoveBaseAction.h>
+#include <ipa_navigation_msgs/MoveBaseAction.h>
+#include <ipa_navigation_msgs/MoveBaseGoal.h>
 #include <actionlib/client/simple_action_client.h>
 
 #include <free_fleet/Client.hpp>
@@ -55,7 +54,7 @@ public:
   using WriteLock = std::unique_lock<std::mutex>;
 
   using MoveBaseClient = 
-      actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
+      actionlib::SimpleActionClient<ipa_navigation_msgs::MoveBaseAction>;
   using MoveBaseClientSharedPtr = std::shared_ptr<MoveBaseClient>;
   using GoalState = actionlib::SimpleClientGoalState;
 
@@ -152,7 +151,7 @@ private:
       const std::string& request_robot_name,
       const std::string& request_task_id);
 
-  move_base_msgs::MoveBaseGoal location_to_move_base_goal(
+  ipa_navigation_msgs::MoveBaseGoal location_to_move_base_goal(
       const messages::Location& location) const;
 
   std::mutex task_id_mutex;
@@ -162,7 +161,7 @@ private:
   struct Goal
   {
     std::string level_name;
-    move_base_msgs::MoveBaseGoal goal;
+    ipa_navigation_msgs::MoveBaseGoal goal;
     bool sent = false;
     uint32_t aborted_count = 0;
     ros::Time goal_end_time;
