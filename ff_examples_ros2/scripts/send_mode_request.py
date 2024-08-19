@@ -74,7 +74,7 @@ def main(argv = sys.argv):
     elif args.mode == 'docking':
         msg.mode.mode = RobotMode.MODE_DOCKING
         dock_name_param = ModeParameter()
-        dock_name_param.name = "Dock_Name"
+        dock_name_param.name = "docking"
         dock_name_param.value = args.dock
         msg.parameters = [dock_name_param]
         print(msg)
