@@ -535,6 +535,9 @@ void ClientNode::handle_requests()
       docked = false;
       docked_frame = "";
 
+      // Get rid of the first point in the nav graph as we should have moved there by undocking
+      goal_path.pop_front();
+
     }
     // Goals must have been updated since last handling, execute them now
     if (!goal_path.front().sent)
