@@ -356,6 +356,7 @@ bool ClientNode::read_mode_request()
             }
         }
         docking = true;
+        publish_robot_state();
         ROS_DEBUG("Calling srv with frame_id %s", SetString_srv.request.data.c_str());
         fields.docking_SetString_client->call(SetString_srv);
 
