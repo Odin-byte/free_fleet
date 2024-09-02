@@ -11,6 +11,7 @@ module FreeFleetData
     const unsigned long MODE_GOING_HOME = 6;
     const unsigned long MODE_DOCKING = 7;
     const unsigned long MODE_REQUEST_ERROR = 8;
+    const unsigned long MODE_USE_TOOL = 9;
   };
   struct RobotMode
   {

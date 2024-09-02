@@ -26,6 +26,7 @@ extern "C" {
 #define FreeFleetData_RobotMode_Constants_MODE_GOING_HOME 6
 #define FreeFleetData_RobotMode_Constants_MODE_DOCKING 7
 #define FreeFleetData_RobotMode_Constants_MODE_REQUEST_ERROR 8
+#define FreeFleetData_RobotMode_Constants_MODE_USE_TOOL 9
 
 
 typedef struct FreeFleetData_RobotMode

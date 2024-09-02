@@ -93,11 +93,33 @@ ClientNode::SharedPtr ClientNode::make(const ClientNodeConfig& _config)
     }
   }
 
+  /// Setting up the tool cmd client, if required, wait for server
+  std::unique_ptr<ros::ServiceClient> tool_SetString_client = nullptr;
+  if (_config.tool_cmd_set_string_server_name != "")
+  {
+    tool_SetString_client =
+      std::make_unique<ros::ServiceClient>(
+        client_node->node->serviceClient<cob_srvs::SetString>(
+          _config.tool_cmd_set_string_server_name, false));
+    if (!tool_SetString_client->waitForExistence(
+      ros::Duration(_config.wait_timeout)))
+    {
+      ROS_ERROR("timed out waiting for tool cmd SetString server: %s",
+        _config.tool_cmd_set_string_server_name.c_str());
+      return nullptr;
+    }
+    else
+    {
+      ROS_INFO("connected with tool cmd service: %s", _config.tool_cmd_set_string_server_name.c_str());
+    }
+  }
+
   client_node->start(Fields{
       std::move(client),
       std::move(move_base_client),
       std::move(docking_SetString_client),
-      std::move(undocking_SetString_client)
+      std::move(undocking_SetString_client),
+      std::move(tool_SetString_client)
   });
 
   return client_node;
@@ -190,6 +212,11 @@ messages::RobotMode ClientNode::get_robot_mode()
   // Checks if robot is currently docking
   if (docking)
     return messages::RobotMode{messages::RobotMode::MODE_DOCKING};
+
+  // Checks if robot is currently using its tool  
+  if (using_tool)
+    return messages::RobotMode{messages::RobotMode::MODE_USE_TOOL};
+  
   /// Checks if robot is charging
   {
     ReadLock battery_state_lock(battery_state_mutex);
@@ -373,6 +400,40 @@ bool ClientNode::read_mode_request()
       // Remember that we are currently docked
       docked = true;
     }
+    else if (mode_request.mode.mode == messages::RobotMode::MODE_USE_TOOL)
+    {
+      ROS_INFO("recieved a USE TOOL command.");
+
+      if (fields.tool_SetString_client)
+      {
+        cob_srvs::SetString SetString_srv;
+
+        // See if there is a tool cmd given
+        for (messages::ModeParameter const& param : mode_request.parameters)
+        {
+            ROS_DEBUG("Parameter name: %s, value: %s", param.name.c_str(), param.value.c_str());
+            if (param.name == "tool_cmd")
+            {
+                ROS_INFO("Got command: %s", param.value.c_str());
+                SetString_srv.request.data = param.value;
+                break;
+            }
+        }
+        using_tool = true;
+        publish_robot_state();
+        ROS_DEBUG("Calling srv with cmd %s", SetString_srv.request.data.c_str());
+        fields.tool_SetString_client->call(SetString_srv);
+
+        if (!SetString_srv.response.success)
+        {
+          ROS_ERROR("Failed to trigger tool cmd, message: %s.",
+            SetString_srv.response.message.c_str());
+          request_error = true;
+          return false;
+        }
+      }
+      using_tool = false;
+    }    
 
     WriteLock task_id_lock(task_id_mutex);
     current_task_id = mode_request.task_id;

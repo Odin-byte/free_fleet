@@ -47,6 +47,8 @@ struct ClientNodeConfig
   std::string docking_set_string_server_name = "";
   std::string undocking_set_string_server_name = "";
 
+  std::string tool_cmd_set_string_server_name ="";
+
   int dds_domain = 42;
   std::string dds_state_topic = "robot_state";
   std::string dds_mode_request_topic = "mode_request";

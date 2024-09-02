@@ -35,6 +35,8 @@ struct RobotMode
   static const uint32_t MODE_GOING_HOME = 6;
   static const uint32_t MODE_DOCKING = 7;
   static const uint32_t MODE_REQUEST_ERROR = 8;
+  static const uint32_t MODE_CLEANING = 9;
+  static const uint32_t MODE_USE_TOOL = 10;
 };
 
 } // namespace messages

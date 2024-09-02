@@ -75,6 +75,9 @@ public:
 
     /// Undocking server client
     std::unique_ptr<ros::ServiceClient> undocking_SetString_client;
+
+    // Tool cmd client
+    std::unique_ptr<ros::ServiceClient> tool_SetString_client;
   };
 
   void print_config();
@@ -128,6 +131,7 @@ private:
   std::atomic<bool> docking;
   std::atomic<bool> docked;
   std::string docked_frame;
+  std::atomic<bool> using_tool;
 
   messages::RobotMode get_robot_mode();
 
