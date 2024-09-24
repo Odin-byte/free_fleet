@@ -20,8 +20,8 @@
     <param name="dds_path_request_topic" value="path_request"/>
     <param name="dds_destination_request_topic" value="destination_request"/>
 
-    <param name="update_state_frequency" value="10.0"/>
-    <param name="publish_state_frequency" value="2.0"/>
+    <param name="update_state_frequency" value="5.0"/>
+    <param name="publish_state_frequency" value="4.0"/>
 
     <param name="translation_x" value="-18.705"/>
     <param name="translation_y" value="22.725"/>

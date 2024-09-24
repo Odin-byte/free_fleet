@@ -38,6 +38,7 @@ def main(argv = sys.argv):
     default_task_id = '576y13ewgyffeijuais'
     default_mode = 'mode'
     default_dock = 'dock'
+    default_tool_cmd = ''
     default_topic_name = 'robot_mode_requests'
 
     parser = argparse.ArgumentParser()
@@ -45,6 +46,7 @@ def main(argv = sys.argv):
     parser.add_argument('-r', '--robot-name', default=default_robot_name)
     parser.add_argument('-m', '--mode', default=default_mode)
     parser.add_argument('-d', '--dock', default=default_dock)
+    parser.add_argument('-c', '--cmd_tool', default=default_tool_cmd)
     parser.add_argument('-i', '--task-id', default=default_task_id)
     parser.add_argument('-t', '--topic-name', default=default_topic_name)
     args = parser.parse_args(argv[1:])
@@ -78,8 +80,15 @@ def main(argv = sys.argv):
         dock_name_param.value = args.dock
         msg.parameters = [dock_name_param]
         print(msg)
+    elif args.mode == 'use_tool':
+        msg.mode.mode = RobotMode.MODE_USE_TOOL
+        tool_cmd_param = ModeParameter()
+        tool_cmd_param.name = "tool_cmd"
+        tool_cmd_param.value = args.cmd_tool
+        msg.parameters = [tool_cmd_param]
+        print(msg)
     else:
-        print('unrecognized mode requested, only use pause, resume or docking please')
+        print('unrecognized mode requested, only use pause, resume, docking or use_tool please')
         return
   
     rclpy.spin_once(node, timeout_sec=1.0)
