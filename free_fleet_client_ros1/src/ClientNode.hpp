@@ -129,6 +129,7 @@ private:
   std::atomic<bool> emergency;
   std::atomic<bool> paused;
   std::atomic<bool> docking;
+  std::atomic<bool> undocking;
   std::atomic<bool> docked;
   std::string docked_frame;
   std::atomic<bool> using_tool;

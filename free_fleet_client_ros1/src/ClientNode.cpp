@@ -383,7 +383,7 @@ bool ClientNode::read_mode_request()
             }
         }
         docking = true;
-        publish_robot_state();
+        // publish_robot_state();
         ROS_DEBUG("Calling srv with frame_id %s", SetString_srv.request.data.c_str());
         fields.docking_SetString_client->call(SetString_srv);
 
@@ -564,9 +564,8 @@ void ClientNode::handle_requests()
   // there is an emergency or the robot is paused
   if (emergency || request_error || paused)
     return;
-
   // ooooh we have goals
-  WriteLock goal_path_lock(goal_path_mutex);
+  goal_path_mutex.lock();
   if (!goal_path.empty())
   {
     // Check if we are currently docked
@@ -575,20 +574,22 @@ void ClientNode::handle_requests()
       // Call undocking service on frame_id we are currently docked at
       if (fields.undocking_SetString_client)
       {
+        goal_path_mutex.unlock();
         cob_srvs::SetString SetString_srv;
         std::cout << docked_frame;
         SetString_srv.request.data = docked_frame;
 
-        docking = true;
+        undocking = true;
         ROS_INFO("Calling srv with frame_id %s", SetString_srv.request.data.c_str());
         fields.undocking_SetString_client->call(SetString_srv);
-        docking = false;
+        undocking = false;
         
         if (!SetString_srv.response.success)
         {
           ROS_ERROR("Failed to trigger docking sequence, message: %s.",
             SetString_srv.response.message.c_str());
           request_error = true;
+          goal_path_mutex.unlock();
           return;
         }
       }
@@ -596,10 +597,8 @@ void ClientNode::handle_requests()
       // Remember that we are no longer docked
       docked = false;
       docked_frame = "";
-
       // Get rid of the first point in the nav graph as we should have moved there by undocking
       goal_path.pop_front();
-
     }
     // Goals must have been updated since last handling, execute them now
     if (!goal_path.front().sent)
@@ -607,6 +606,7 @@ void ClientNode::handle_requests()
       ROS_INFO("sending next goal.");
       fields.move_base_client->sendGoal(goal_path.front().goal);
       goal_path.front().sent = true;
+      goal_path_mutex.unlock();
       return;
     }
 
@@ -631,14 +631,17 @@ void ClientNode::handle_requests()
             "we reached our goal early! Waiting %.1f more seconds",
             wait_time_remaining.toSec());
       }
+      goal_path_mutex.unlock();
       return;
     }
     else if (current_goal_state == GoalState::PENDING)
     {
+      goal_path_mutex.unlock();
       return;
     }
     else if (current_goal_state == GoalState::ACTIVE)
     {
+      goal_path_mutex.unlock();
       return;
     }
     else if (current_goal_state == GoalState::ABORTED)
@@ -653,6 +656,7 @@ void ClientNode::handle_requests()
             goal_path.front().aborted_count);
         fields.move_base_client->cancelGoal();
         goal_path.front().sent = false;
+        goal_path_mutex.unlock();
         return;
       }
       else
@@ -664,6 +668,7 @@ void ClientNode::handle_requests()
             goal_path.front().aborted_count);
         fields.move_base_client->cancelGoal();
         goal_path.clear();
+        goal_path_mutex.unlock();
         return;
       }
     }
@@ -675,11 +680,13 @@ void ClientNode::handle_requests()
           "requests or manual intervention.");
       fields.move_base_client->cancelGoal();
       goal_path.clear();
+      goal_path_mutex.unlock();
       return;
     }
   }
   
   // otherwise, mode is correct, nothing in queue, nothing else to do then
+  goal_path_mutex.unlock();
 }
 
 void ClientNode::update_thread_fn()
